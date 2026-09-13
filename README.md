@@ -9,8 +9,11 @@ its own README.
 | Folder | Model | Notes |
 |:-------|:------|:------|
 | [`cosyvoice3-0.5b-2512/`](cosyvoice3-0.5b-2512/README.md) | [FunAudioLLM/Fun-CosyVoice3-0.5B-2512](https://huggingface.co/FunAudioLLM/Fun-CosyVoice3-0.5B-2512) | Zero-shot multilingual TTS (LLM + flow-matching + HiFTNet vocoder) |
+| [`sensevoice-small/`](sensevoice-small/README.md) | [FunAudioLLM/SenseVoiceSmall](https://huggingface.co/FunAudioLLM/SenseVoiceSmall) | Multilingual ASR / speech-emotion-recognition / audio-event-detection (CTC-only encoder) |
 
-Conversion scripts: https://github.com/yishanwang/cosyvoice3-openvino-conversion
+Conversion scripts:
+- CosyVoice3: https://github.com/yishanwang/cosyvoice3-openvino-conversion
+- SenseVoiceSmall: https://github.com/yishanwang/sensevoice-openvino-conversion
 
 ## Git LFS
 
