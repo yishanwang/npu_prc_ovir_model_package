@@ -17,10 +17,19 @@ the model package only): https://github.com/yishanwang/cosyvoice3-openvino-conve
 | `openvino_flow_embeddings_model.xml` / `.bin` | Flow module: token embedding + pre-lookahead layer + speaker-embedding projection |
 | `openvino_flow_estimator_model.xml` / `.bin` | Flow module: bare DiT flow-matching estimator (10-step Euler solver runs in host code, not in this graph) |
 | `openvino_hift_model.xml` / `.bin` | HiFTNet vocoder, **up to but not including** the final ISTFT step (run `torch.istft` on the raw output in host code — see conversion-scripts repo for why) |
-| `campplus.onnx` | Speaker embedding (pre-exported by FunAudioLLM, unmodified) |
-| `speech_tokenizer_v3.onnx` | Speech tokenizer (pre-exported by FunAudioLLM, unmodified) |
+| `openvino_campplus_model.xml` / `.bin` | Speaker embedding, converted from `campplus.onnx` via plain `ovc` (default FP16 compression — fine for this continuous embedding output) |
+| `openvino_speech_tokenizer_v3_model.xml` / `.bin` | Speech tokenizer, converted from `speech_tokenizer_v3.onnx` via `ovc --compress_to_fp16=False` (**FP32, required** — the output is a discrete VQ token index; FP16 flips ~80% of indices by rounding across codebook boundaries, see conversion-scripts repo) |
+| `campplus.onnx` | Speaker embedding (pre-exported by FunAudioLLM, unmodified — original source for `openvino_campplus_model.*`) |
+| `speech_tokenizer_v3.onnx` | Speech tokenizer (pre-exported by FunAudioLLM, unmodified — original source for `openvino_speech_tokenizer_v3_model.*`) |
 | `cosyvoice3.yaml` | Original model hyperparameter config (reference only) |
 | `CosyVoice-BlankEN/` | Qwen2 tokenizer files |
+
+**Recommendation:** use the `openvino_campplus_model.*` / `openvino_speech_tokenizer_v3_model.*`
+IR files for inference rather than the raw `.onnx` files — they load
+directly via `openvino.Core()` without an ONNX frontend dependency, and
+`openvino_speech_tokenizer_v3_model.*` is verified bit-exact against the
+original ONNX (see Validation below). The `.onnx` files are kept for
+provenance/reference.
 
 ## Usage
 
@@ -43,6 +52,16 @@ See the `OVCosyVoice3`/`OVCosyVoice3LM`/`OVFlow`/`OVHiFT` wrapper classes in
   neural-network portion is validated the same way; the separate ISTFT
   post-processing step reuses PyTorch's own `torch.istft` unmodified so it
   carries no additional conversion risk.
+- campplus (`openvino_campplus_model.*`): validated against ONNXRuntime on
+  real random inputs — max abs diff ~0.02 (~1% relative), consistent with
+  FP16 compression on a continuous embedding.
+- speech_tokenizer_v3 (`openvino_speech_tokenizer_v3_model.*`): validated
+  against ONNXRuntime on real random inputs — **bit-exact match** at FP32.
+  The default FP16-compressed conversion was rejected: it flipped 62/75
+  token indices (off-by-one/two argmax rounding at codebook boundaries),
+  which would silently corrupt which speech tokens are selected. See
+  [conversion-scripts repo](https://github.com/yishanwang/cosyvoice3-openvino-conversion)
+  for the reproducible validation script and full writeup.
 
 ## License / Attribution
 
